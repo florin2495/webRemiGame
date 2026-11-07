@@ -48,7 +48,10 @@ export interface PlayerRow {
   joined_at: string;
   /** Pending host kick during a game (null = none). */
   kick_requested_at: string | null;
+  /** Presence stamp, touched by requireMember. Needs migration 002_reconnect.sql. */
+  last_seen_at: string;
 }
 
-export const PLAYER_COLUMNS = "id, room_id, nickname, is_host, ready, joined_at, kick_requested_at";
+/** Never add token_hash / device_hash here: these rows feed the public state. */
+export const PLAYER_COLUMNS = "id, room_id, nickname, is_host, ready, joined_at, kick_requested_at, last_seen_at";
 export const ROOM_COLUMNS = "id, code, name, password_hash, min_meld, status, round, host_player_id, last_activity_at";

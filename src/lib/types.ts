@@ -11,6 +11,8 @@ export interface PublicPlayer {
   total: number;
   /** Ms left to press "Ignoră" on a pending host kick (game in progress), null if none. */
   kickRemainingMs: number | null;
+  /** Seen in the last 45 s (see lib/reconnect.ts). False = phone in the background, closed tab, no network. */
+  connected: boolean;
 }
 
 /** What everyone at the table may see about the current round. */

@@ -20,7 +20,7 @@ export const NOT_MELDED_PENALTY = 100;
 export const JOKER_PENALTY = 50;
 
 /** Lobby/finished rooms idle this long are deleted. */
-export const ROOM_IDLE_MINUTES = 2;
+export const ROOM_IDLE_MINUTES = 10;
 export const PRESENCE_TOUCH_MS = 20_000;
 
 export function minutesLabel(n: number): string {

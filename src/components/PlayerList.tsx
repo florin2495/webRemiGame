@@ -6,6 +6,16 @@ import type { RoomState } from "@/lib/types";
 import { KickBadge } from "./KickModal";
 import { ErrorText } from "./ui";
 
+/** Shown next to a player not seen for 45 s (phone in the background, closed tab, no network). */
+export function OfflineBadge({ connected }: { connected: boolean | undefined }) {
+  if (connected !== false) return null;
+  return (
+    <span className="shrink-0 rounded bg-zinc-200 px-1.5 text-[10px] font-semibold uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+      deconectat
+    </span>
+  );
+}
+
 interface Props {
   state: RoomState;
   mode: "lobby" | "game";
@@ -67,6 +77,7 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
                 {p.isHost && (
                   <span className="rounded bg-zinc-200 px-1.5 text-[10px] font-semibold uppercase dark:bg-zinc-800">host</span>
                 )}
+                <OfflineBadge connected={p.connected} />
               </span>
               <span className="flex shrink-0 items-center gap-2 text-sm">
                 {p.kickRemainingMs !== null && <KickBadge remainingMs={p.kickRemainingMs} receivedAt={receivedAt} />}

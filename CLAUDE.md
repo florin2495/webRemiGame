@@ -20,6 +20,7 @@ so this list is the source of truth. **Update it whenever the user confirms a mi
 | --- | --- | --- |
 | `supabase/schema.sql` (initial) | yes (2026-11-07, verified: tables exist, anon gets 401, e2e passed) | `remi_rooms`, `remi_players`, `remi_rounds` |
 | `supabase/migrations/001_pending_kick.sql` | yes (2026-11-07, verified) | `remi_players.kick_requested_at timestamptz` (kick during a game waits 10 s, "Ignoră"). Do not push before it is run. |
+| `supabase/migrations/002_reconnect.sql` | yes (2026-11-07, verified: service role 200, anon 401) | `remi_players.last_seen_at`, `device_hash` + index (rejoin the same seat). Do not push before it is run. |
 
 Rules for schema changes:
 - Every object of this game is prefixed `remi_` (tables, constraints, indexes). Table names live in `T` in `src/lib/server/db.ts`.
@@ -32,6 +33,9 @@ Rules for schema changes:
 - All rules are pure functions in `src/lib/remi.ts` (deal, draw, playTurn, skipTurn, removeFromRound, scoring).
   The server re-validates every turn with them; the client uses `arrange` / `checkFormation` only for UX.
 - A round's whole state is one jsonb row in `remi_rounds`; moves are conditional updates on `version`.
+- Rejoin the same seat (`src/lib/reconnect.ts`): every member request stamps `last_seen_at` (≤ every 10 s);
+  re-joining with an existing nickname reclaims that seat (new token, same player id and hand) from the same device
+  (`device_hash`) or once the seat has been unseen for 45 s, also mid-round. `/state` exposes only a derived `connected` flag.
 - No teams: 2-4 players, each for themself (the user dropped the 4-player team option on 2026-11-07).
 
 ## Testing
