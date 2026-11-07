@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/client/api";
 import type { RoomState } from "@/lib/types";
+import { KickBadge } from "./KickModal";
 import { ErrorText } from "./ui";
 
 interface Props {
@@ -11,9 +12,11 @@ interface Props {
   /** When given and the caller is host, a "Scoate" (kick) button is shown next to other players. */
   token?: string;
   refresh?: () => Promise<void>;
+  /** Client time (ms) at which `state` arrived, for the pending-kick countdown. */
+  receivedAt: number;
 }
 
-export function PlayerList({ state, mode, token, refresh }: Props) {
+export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
   const { players, me, room, game } = state;
   const canKick = Boolean(token) && room.hostPlayerId === me.id;
   const [busy, setBusy] = useState<string | null>(null);
@@ -22,7 +25,10 @@ export function PlayerList({ state, mode, token, refresh }: Props) {
 
   async function kick(id: string, nickname: string) {
     if (!token) return;
-    const midGame = room.status === "playing" ? " Piesele lui ies din joc, tura trece mai departe." : "";
+    const midGame =
+      room.status === "playing"
+        ? " Are 10 secunde să refuze; dacă nu, piesele lui ies din joc și tura trece mai departe."
+        : "";
     if (!window.confirm(`Scoți jucătorul ${nickname} din cameră?${midGame}`)) return;
     setBusy(id);
     setError("");
@@ -63,6 +69,7 @@ export function PlayerList({ state, mode, token, refresh }: Props) {
                 )}
               </span>
               <span className="flex shrink-0 items-center gap-2 text-sm">
+                {p.kickRemainingMs !== null && <KickBadge remainingMs={p.kickRemainingMs} receivedAt={receivedAt} />}
                 {mode === "lobby" ? (
                   p.ready ? (
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">✓ gata</span>

@@ -1,9 +1,11 @@
+import { notifyRoom } from "@/lib/server/broadcast";
 import { db, T } from "@/lib/server/db";
 import { fail, handle, readJson } from "@/lib/server/http";
 import { removePlayer } from "@/lib/server/membership";
-import { requireHost, requireMember } from "@/lib/server/room";
+import { getRound, requireHost, requireMember } from "@/lib/server/room";
 
-// POST /api/rooms/[code]/kick  { playerId } - host removes another player (any status).
+// POST /api/rooms/[code]/kick  { playerId } - host removes another player. Lobby / finished: at once.
+// During a running round a participant gets a 10 s pending kick they can refuse (see /kick/ignore).
 // Not a ban: identity is a browser token, so a kicked player could rejoin a lobby under a
 // new nickname. A room password is the real access control.
 export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/kick">) {
@@ -24,6 +26,22 @@ export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/ki
       .maybeSingle();
     if (error && error.code !== "22P02") throw error; // 22P02 = malformed uuid
     if (!target) fail(404, "Jucătorul nu mai e în cameră.");
+
+    // Game in progress and the target takes part in the round: start a 10 s pending kick instead of removing.
+    // Spectators (players waiting for the next round) and lobby / finished rooms are removed at once.
+    if (room.status === "playing") {
+      const round = await getRound(room.id, room.round);
+      if (round && !round.state.result && round.state.order.includes(targetId)) {
+        const { error: pendingError } = await db()
+          .from(T.players)
+          .update({ kick_requested_at: new Date().toISOString() })
+          .eq("id", targetId)
+          .is("kick_requested_at", null); // already pending: no-op, the deadline is not reset
+        if (pendingError) throw pendingError;
+        await notifyRoom(room.id, "kick_pending");
+        return { ok: true, pending: true };
+      }
+    }
 
     await removePlayer(room, targetId, "player_kicked");
     return { ok: true };

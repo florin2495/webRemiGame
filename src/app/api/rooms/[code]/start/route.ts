@@ -2,6 +2,7 @@ import { deal, MAX_PLAYERS, MIN_PLAYERS, roundTurnOrder } from "@/lib/remi";
 import { notifyRoom } from "@/lib/server/broadcast";
 import { db, T } from "@/lib/server/db";
 import { fail, handle, isUniqueViolation } from "@/lib/server/http";
+import { clearPendingKicks } from "@/lib/server/kick";
 import { listPlayers, requireHost, requireMember, requireStatus } from "@/lib/server/room";
 
 // POST /api/rooms/[code]/start - host only, everyone ready, 2-4 players. Deals the tiles.
@@ -38,6 +39,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/st
       .eq("status", "lobby");
     if (error) throw error;
 
+    await clearPendingKicks(room.id);
     await notifyRoom(room.id, "game_started");
     return { ok: true };
   });

@@ -9,6 +9,8 @@ export interface PublicPlayer {
   ready: boolean;
   /** Sum of points over every finished round in this room (lower is better). */
   total: number;
+  /** Ms left to press "Ignoră" on a pending host kick (game in progress), null if none. */
+  kickRemainingMs: number | null;
 }
 
 /** What everyone at the table may see about the current round. */

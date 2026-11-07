@@ -35,3 +35,4 @@ Realtime Broadcast doar ca semnal de refresh, identitate prin token aleator (în
 | POST | `/[code]/skip` | host | sare tura (piesa trasă se aruncă) |
 | POST | `/[code]/new-round` | host, finished | rundă nouă |
 | POST | `/[code]/leave`, `/[code]/kick` | membru / host | ieșire / scoatere |
+| POST | `/[code]/kick/ignore` | jucătorul vizat | refuză o scoatere în așteptare (în timpul rundei scoaterea așteaptă 10 s; expirarea se aplică leneș în `requireMember`) |

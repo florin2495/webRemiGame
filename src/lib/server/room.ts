@@ -1,9 +1,11 @@
 import "server-only";
 import { isRoomExpired, minutesLabel, ROOM_IDLE_MINUTES, type RoundState, RuleError } from "@/lib/remi";
+import { kickRemainingMs } from "@/lib/kick";
 import type { PublicPlayer, RoomState } from "@/lib/types";
 import { hashToken } from "./crypto";
 import { db, PLAYER_COLUMNS, type PlayerRow, ROOM_COLUMNS, type RoomRow, T } from "./db";
 import { fail } from "./http";
+import { enforceExpiredKicks } from "./kick";
 
 const GONE = `Camera nu există sau a fost închisă după ${minutesLabel(ROOM_IDLE_MINUTES)} de inactivitate.`;
 
@@ -43,7 +45,7 @@ export async function touchRoom(roomId: string): Promise<void> {
 export async function requireMember(req: Request, code: string): Promise<{ room: RoomRow; player: PlayerRow }> {
   const token = req.headers.get("x-player-token");
   if (!token || token.length > 200) fail(401, "Nu ești în această cameră.");
-  const room = await getRoomByCode(code);
+  const room = await enforceExpiredKicks(await getRoomByCode(code));
   const { data, error } = await db()
     .from(T.players)
     .select(PLAYER_COLUMNS)
@@ -161,6 +163,7 @@ export async function buildState(room: RoomRow, me: PlayerRow): Promise<RoomStat
   const totals = new Map<string, number>();
   for (const h of hist) for (const [id, p] of Object.entries(h.points)) totals.set(id, (totals.get(id) ?? 0) + p);
 
+  const now = Date.now();
   const s = round?.state ?? null;
   let ordered = players;
   if (s) {
@@ -173,6 +176,7 @@ export async function buildState(room: RoomRow, me: PlayerRow): Promise<RoomStat
     isHost: p.is_host,
     ready: p.ready,
     total: totals.get(p.id) ?? 0,
+    kickRemainingMs: kickRemainingMs(p.kick_requested_at, now),
   });
   const myHand = s?.hands[me.id] ?? null;
 

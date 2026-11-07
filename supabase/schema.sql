@@ -37,7 +37,8 @@ create table if not exists public.remi_players (
   token_hash text not null unique,
   is_host    boolean not null default false,
   ready      boolean not null default false,
-  joined_at  timestamptz not null default now()
+  joined_at  timestamptz not null default now(),
+  kick_requested_at timestamptz                 -- pending host kick during a game (null = none), see src/lib/kick.ts
 );
 create unique index if not exists remi_players_room_nickname_uq on public.remi_players (room_id, lower(nickname));
 create index if not exists remi_players_room_idx on public.remi_players (room_id);

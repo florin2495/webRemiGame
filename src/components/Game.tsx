@@ -16,6 +16,7 @@ interface Props {
   state: RoomState;
   token: string;
   refresh: () => Promise<void>;
+  receivedAt: number;
 }
 
 /** The player's moves of the current turn, kept locally until they discard. */
@@ -28,7 +29,7 @@ interface Draft {
 const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `f${Date.now()}${Math.random()}`.slice(0, 30);
 
-export function Game({ state, token, refresh }: Props) {
+export function Game({ state, token, refresh, receivedAt }: Props) {
   const { room, me, game, players } = state;
   const base = `/api/rooms/${room.code}`;
   const [busy, setBusy] = useState(false);
@@ -353,7 +354,7 @@ export function Game({ state, token, refresh }: Props) {
             </button>
           )}
         </div>
-        <PlayerList state={state} mode="game" token={token} refresh={refresh} />
+        <PlayerList state={state} mode="game" token={token} refresh={refresh} receivedAt={receivedAt} />
       </Card>
 
       <Scoreboard state={state} />
@@ -362,7 +363,7 @@ export function Game({ state, token, refresh }: Props) {
   );
 }
 
-function RoundResultCard({ state, token, refresh }: Props) {
+function RoundResultCard({ state, token, refresh }: Omit<Props, "receivedAt">) {
   const { room, me, game, players } = state;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

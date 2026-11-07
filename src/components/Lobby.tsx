@@ -13,9 +13,10 @@ interface Props {
   state: RoomState;
   token: string;
   refresh: () => Promise<void>;
+  receivedAt: number;
 }
 
-export function Lobby({ state, token, refresh }: Props) {
+export function Lobby({ state, token, refresh, receivedAt }: Props) {
   const { room, me, players } = state;
   const base = `/api/rooms/${room.code}`;
   const isHost = room.hostPlayerId === me.id;
@@ -65,7 +66,7 @@ export function Lobby({ state, token, refresh }: Props) {
             <span className="text-sm text-zinc-500">etalare {room.minMeld}</span>
           )}
         </div>
-        <PlayerList state={state} mode="lobby" token={token} refresh={refresh} />
+        <PlayerList state={state} mode="lobby" token={token} refresh={refresh} receivedAt={receivedAt} />
       </Card>
 
       <Card className="flex flex-col gap-3">
