@@ -14,6 +14,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Remi",
+  applicationName: "Remi",
+  appleWebApp: { capable: true, title: "Remi", statusBarStyle: "default" },
+  other: { "apple-mobile-web-app-capable": "yes" },
   description: "Remi pe tablă, jucat cu 1-3 prieteni pe telefon.",
 };
 
