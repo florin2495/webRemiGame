@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-// Opaque app icon: three numbered tiles on an emerald background.
+// Opaque app icon: three numbered tiles on a teal background.
 // `inset` shrinks the artwork (maskable icons keep it inside the central 80%).
 export function pwaIcon(px: number, inset = 1): ImageResponse {
   const s = px * inset;
@@ -21,7 +21,7 @@ export function pwaIcon(px: number, inset = 1): ImageResponse {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#047857",
+          background: "#0f766e",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap }}>
