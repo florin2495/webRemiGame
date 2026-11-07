@@ -18,14 +18,16 @@ export function Tile({
   disabled,
 }: {
   tile: number;
-  size?: "sm" | "md";
+  /** "fill": takes the size of its parent (rack slots). */
+  size?: "sm" | "md" | "fill";
   selected?: boolean;
   /** Extra ring (e.g. the tile taken from the discard pile, which must be played). */
   marked?: boolean;
   onClick?: () => void;
   disabled?: boolean;
 }) {
-  const dims = size === "sm" ? "h-9 w-6 text-sm" : "h-14 w-10 text-xl";
+  const dims =
+    size === "sm" ? "h-9 w-6 text-sm" : size === "fill" ? "h-full w-full text-base sm:text-xl" : "h-14 w-10 text-xl";
   const face = isJoker(tile) ? (
     <span className="bg-gradient-to-br from-rose-500 via-amber-400 to-sky-500 bg-clip-text text-transparent">★</span>
   ) : (

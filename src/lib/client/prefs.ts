@@ -57,5 +57,4 @@ export function useStringPref(key: string): string | null {
 }
 
 export const PREF_CONFIRM_DISCARD = "remi:pref:confirmDiscard";
-export const PREF_SORT = "remi:pref:sort";
 export const PREF_NICKNAME = "remi:pref:nickname";

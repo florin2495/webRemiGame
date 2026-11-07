@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { api } from "@/lib/client/api";
-import { PREF_CONFIRM_DISCARD, PREF_SORT, useBoolPref, useStringPref, writePref } from "@/lib/client/prefs";
-import { arrange, checkFormation, colourOf, type Formation, handValue, isJoker, numberOf } from "@/lib/remi";
+import { PREF_CONFIRM_DISCARD, useBoolPref } from "@/lib/client/prefs";
+import { arrange, checkFormation, type Formation, handValue, isJoker } from "@/lib/remi";
 import type { RoomState } from "@/lib/types";
 import { PlayerList } from "./PlayerList";
+import { Rack } from "./Rack";
 import { Rules } from "./Rules";
 import { Scoreboard } from "./Scoreboard";
 import { Tile, tileLabel, TileBack } from "./Tile";
@@ -24,14 +25,6 @@ interface Draft {
   hand: number[];
 }
 
-type SortMode = "colour" | "number";
-
-function sortTiles(tiles: number[], mode: SortMode): number[] {
-  const key = (t: number) =>
-    isJoker(t) ? 1e6 + t : mode === "colour" ? colourOf(t) * 100 + numberOf(t) : numberOf(t) * 10 + colourOf(t);
-  return [...tiles].sort((a, b) => key(a) - key(b));
-}
-
 const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `f${Date.now()}${Math.random()}`.slice(0, 30);
 
@@ -42,7 +35,6 @@ export function Game({ state, token, refresh }: Props) {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
   const [confirmDiscard] = useBoolPref(PREF_CONFIRM_DISCARD, false);
-  const sortMode: SortMode = useStringPref(PREF_SORT) === "number" ? "number" : "colour";
 
   // Local draft, reset whenever the server state moves on (new version).
   const key = `${room.round}:${state.version}`;
@@ -159,7 +151,6 @@ export function Game({ state, token, refresh }: Props) {
   const drawFrom = (source: "pile" | "discard") =>
     run(() => api(`${base}/draw`, { token, body: { source, version: state.version } }));
 
-  const hand = sortTiles(draft.hand, sortMode);
   const turnName = game.currentPlayerId ? nick(game.currentPlayerId) : "";
   const inRound = state.hand !== null;
 
@@ -286,28 +277,20 @@ export function Game({ state, token, refresh }: Props) {
       {/* My hand */}
       {inRound && !result && (
         <Card className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-bold">
-              Piesele tale <span className="font-normal text-zinc-500">({draft.hand.length})</span>
-            </h2>
-            <div className="flex gap-1 text-xs">
-              {(["colour", "number"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => writePref(PREF_SORT, m)}
-                  className={`rounded-md px-2 py-1 font-semibold ${sortMode === m ? "bg-zinc-200 dark:bg-zinc-800" : "text-zinc-500"}`}
-                >
-                  {m === "colour" ? "după culoare" : "după număr"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5 pt-1.5">
-            {hand.map((t) => (
-              <Tile key={t} tile={t} selected={handSel.includes(t)} marked={t === state.mustUse} onClick={() => toggle(t)} disabled={busy} />
-            ))}
-          </div>
+          <h2 className="font-bold">
+            Tabla ta <span className="font-normal text-zinc-500">({draft.hand.length} piese)</span>
+          </h2>
+          <Rack
+            storageKey={`remi:rack:${room.code}:${room.round}`}
+            hand={draft.hand}
+            selected={handSel}
+            mustUse={state.mustUse}
+            disabled={busy}
+            onToggle={toggle}
+          />
+          <p className="text-xs text-zinc-500">
+            Atinge o piesă ca s-o alegi. Trage-o oriunde pe tablă (poți lăsa goluri) sau pe + ca să faci un rând nou.
+          </p>
           {state.mustUse !== null && draft.hand.includes(state.mustUse) && (
             <p className="text-xs text-emerald-700 dark:text-emerald-400">
               Piesa încercuită ({tileLabel(state.mustUse)}) e luată de jos: trebuie pusă pe masă în tura asta.
