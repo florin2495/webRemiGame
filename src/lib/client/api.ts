@@ -111,6 +111,9 @@ export function deviceId(): string {
   return id;
 }
 
+/** basePath from next.config.ts; fetch() is not prefixed by Next automatically. */
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export class ApiRequestError extends Error {
   constructor(
     public status: number,
@@ -129,7 +132,7 @@ export async function api<T = { ok: true }>(
   if (opts.body !== undefined) headers["content-type"] = "application/json";
   let res: Response;
   try {
-    res = await fetch(path, {
+    res = await fetch(path.startsWith("/") ? `${BASE_PATH}${path}` : path, {
       method: opts.method ?? (opts.body !== undefined ? "POST" : "GET"),
       headers,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,

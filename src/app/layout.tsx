@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Remi",
   applicationName: "Remi",
+  // Metadata URLs are not basePath-prefixed automatically.
+  icons: {
+    icon: [{ url: "/remi/favicon.ico", sizes: "48x48", type: "image/x-icon" }],
+    apple: [{ url: "/remi/pwa-icons/apple", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: { capable: true, title: "Remi", statusBarStyle: "default" },
   other: { "apple-mobile-web-app-capable": "yes" },
   description: "Remi pe tablă, jucat cu 1-3 prieteni pe telefon.",

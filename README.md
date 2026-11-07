@@ -2,7 +2,7 @@
 
 Remi pe tablă multiplayer, pentru 2–4 jucători, jucat pe telefon între prieteni.
 Next.js 16 (App Router), Supabase (Postgres + Realtime Broadcast), deploy pe Vercel (fra1, Frankfurt).
-Face parte din hub-ul [hailatat.icu](https://hailatat.icu) și rulează pe https://remi.hailatat.icu.
+Face parte din hub-ul [hailatat.icu](https://hailatat.icu) și rulează pe https://games.hailatat.icu/remi.
 
 ## Reguli implementate
 

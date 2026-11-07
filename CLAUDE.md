@@ -6,7 +6,7 @@
 - GitHub: personal account **florin2495** only (repo `florin2495/webRemiGame`, private). Never the work account.
   Local git identity is pinned in `.git/config`.
 - Vercel project is connected by hand by the user. Functions run in **fra1** (Frankfurt, `vercel.json`), next to the DB.
-  Production domain: https://remi.hailatat.icu
+  Production URL: https://games.hailatat.icu/remi (basePath `/remi`; the hub proxies `/remi/*` to this project)
 - Feedback (`POST /api/feedback`) writes to `hub_feedback` (owned by florin2495/hailataticu-hub, slug `remi`).
 - Ask the user before pushing (= deploying), unless they explicitly say to deploy.
 - **Before every push, bump the patch version** in `package.json` (and `npm install --package-lock-only`).
