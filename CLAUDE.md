@@ -18,7 +18,7 @@ so this list is the source of truth. **Update it whenever the user confirms a mi
 
 | Migration | Applied to the live DB | Notes |
 | --- | --- | --- |
-| `supabase/schema.sql` (initial) | **no - pending** | `remi_rooms`, `remi_players`, `remi_rounds` |
+| `supabase/schema.sql` (initial) | yes (2026-11-07, verified: tables exist, anon gets 401, e2e passed) | `remi_rooms`, `remi_players`, `remi_rounds` |
 
 Rules for schema changes:
 - Every object of this game is prefixed `remi_` (tables, constraints, indexes). Table names live in `T` in `src/lib/server/db.ts`.
