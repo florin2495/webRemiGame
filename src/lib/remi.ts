@@ -199,12 +199,12 @@ export function deal(order: string[], minMeld: number, random: () => number = Ma
   return { order, turn: 0, phase: "play", drawn: null, pile, discard: [], table: [], hands, minMeld, result: null };
 }
 
-/** Turn order for a round: host first in round 1, then the starter rotates every round. */
-export function roundTurnOrder(playerIdsByJoin: string[], hostId: string | null, round: number): string[] {
-  const base =
-    hostId && playerIdsByJoin.includes(hostId)
-      ? [hostId, ...playerIdsByJoin.filter((id) => id !== hostId)]
-      : [...playerIdsByJoin];
+/**
+ * Turn order for a round: the host-chosen seat order (playerIdsBySeat), with the starter rotating by one
+ * seat every round. Round 1 starts with the first seat.
+ */
+export function roundTurnOrder(playerIdsBySeat: string[], round: number): string[] {
+  const base = [...playerIdsBySeat];
   if (base.length === 0) return base;
   const shift = (((round - 1) % base.length) + base.length) % base.length;
   return [...base.slice(shift), ...base.slice(0, shift)];

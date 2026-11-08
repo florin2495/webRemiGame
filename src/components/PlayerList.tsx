@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/client/api";
+import { moveItem } from "@/lib/seats";
 import type { RoomState } from "@/lib/types";
 import { KickBadge } from "./KickModal";
 import { ErrorText } from "./ui";
@@ -33,6 +34,23 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
   const [error, setError] = useState("");
   const showTotals = state.history.length > 0;
 
+  const canReorder = canKick && mode === "lobby" && room.status === "lobby" && players.length > 1;
+
+  async function move(index: number, delta: number) {
+    if (!token) return;
+    const order = moveItem(players.map((p) => p.id), index, delta);
+    setBusy("order");
+    setError("");
+    try {
+      await api(`/api/rooms/${room.code}/reorder`, { token, body: { order } });
+      await refresh?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function kick(id: string, nickname: string) {
     if (!token) return;
     const midGame =
@@ -55,7 +73,7 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
   return (
     <>
       <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
-        {players.map((p) => {
+        {players.map((p, index) => {
           const inRound = Boolean(game && game.order.includes(p.id));
           const isTurn = mode === "game" && game?.currentPlayerId === p.id;
           const isCloser = mode === "game" && game?.result?.closerId === p.id;
@@ -65,6 +83,31 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
               className={`flex items-center justify-between gap-2 py-2 ${isTurn ? "font-bold text-indigo-600 dark:text-indigo-400" : ""}`}
             >
               <span className="flex min-w-0 items-center gap-2">
+                {canReorder && (
+                  <span className="flex shrink-0 flex-col">
+                    <button
+                      type="button"
+                      onClick={() => void move(index, -1)}
+                      disabled={busy !== null || index === 0}
+                      className="min-h-5 min-w-8 text-xs leading-none disabled:opacity-25"
+                      aria-label={`Mută pe ${p.nickname} mai sus`}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void move(index, 1)}
+                      disabled={busy !== null || index === players.length - 1}
+                      className="min-h-5 min-w-8 text-xs leading-none disabled:opacity-25"
+                      aria-label={`Mută pe ${p.nickname} mai jos`}
+                    >
+                      ▼
+                    </button>
+                  </span>
+                )}
+                {mode === "lobby" && (
+                  <span className="w-4 shrink-0 text-center font-mono text-xs text-zinc-500">{index + 1}</span>
+                )}
                 {mode === "game" && (
                   <span aria-hidden className="w-3 text-center">
                     {isTurn ? "▶" : ""}
@@ -117,6 +160,14 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
           );
         })}
       </ul>
+      {mode === "lobby" && players.length > 1 && (
+        <p className="mt-1 text-xs text-zinc-500">
+          {room.round === 1
+            ? "Începe primul din listă."
+            : `Runda ${room.round} începe ${players[(room.round - 1) % players.length]?.nickname ?? ""}.`}
+          {canReorder ? " Schimbă ordinea cu săgețile." : ""}
+        </p>
+      )}
       <ErrorText>{error}</ErrorText>
     </>
   );

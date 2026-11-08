@@ -21,7 +21,6 @@ export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/st
 
     const order = roundTurnOrder(
       players.map((p) => p.id),
-      room.host_player_id,
       room.round,
     );
     // The (room, round) primary key makes a double start impossible.
