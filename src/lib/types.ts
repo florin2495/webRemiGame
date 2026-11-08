@@ -15,6 +15,14 @@ export interface PublicPlayer {
   connected: boolean;
 }
 
+export interface PublicSpectator {
+  id: string;
+  nickname: string;
+  /** Waiting for "Intră la runda următoare". */
+  queued: boolean;
+  connected: boolean;
+}
+
 /** What everyone at the table may see about the current round. */
 export interface PublicGame {
   order: string[];
@@ -46,6 +54,11 @@ export interface RoomState {
   /** Turn order while playing/finished (others after), join order in the lobby. */
   players: PublicPlayer[];
   me: PublicPlayer;
+  /** "spectator": watches only (joined a running game or a full room), can queue for the next round. */
+  role: "player" | "spectator";
+  /** Spectator waiting for the next round. */
+  queued: boolean;
+  spectators: PublicSpectator[];
   game: PublicGame | null;
   /** The caller's own hand, null if they are not in the current round. */
   hand: number[] | null;

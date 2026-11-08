@@ -7,12 +7,21 @@ import { applyMove, listPlayers } from "./room";
 /**
  * Removes a player from a room (used by both "leave" and the host's "kick").
  *  - last player out: the room is deleted
- *  - host removed: host passes to the next player in join order
+ *  - a spectator leaving is simply deleted
+ *  - host removed: host passes to the next player in seat order
  *  - mid-round: their hand leaves with them, the turn moves on; with fewer than 2 players
  *    left the round is cancelled (no points)
  */
 export async function removePlayer(room: RoomRow, playerId: string, reason: string): Promise<{ roomClosed: boolean }> {
-  const remaining = (await listPlayers(room.id)).filter((p) => p.id !== playerId);
+  const seated = await listPlayers(room.id);
+  if (!seated.some((p) => p.id === playerId)) {
+    // A spectator leaving (or being kicked): nothing else changes.
+    const { error } = await db().from(T.players).delete().eq("id", playerId).eq("room_id", room.id);
+    if (error) throw error;
+    await notifyRoom(room.id, reason);
+    return { roomClosed: false };
+  }
+  const remaining = seated.filter((p) => p.id !== playerId);
 
   if (remaining.length === 0) {
     const { error } = await db().from(T.rooms).delete().eq("id", room.id);

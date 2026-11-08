@@ -331,7 +331,7 @@ export function Game({ state, token, refresh, receivedAt }: Props) {
           <ErrorText>{error}</ErrorText>
         </Card>
       )}
-      {!inRound && !result && (
+      {!inRound && !result && state.role === "player" && (
         <p className="text-center text-sm text-zinc-500">Ai intrat după împărțire. Joci din runda următoare.</p>
       )}
       {(!inRound || result || !canPlay) && error && <ErrorText>{error}</ErrorText>}

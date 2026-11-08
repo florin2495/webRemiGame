@@ -70,13 +70,15 @@ export function Lobby({ state, token, refresh, receivedAt }: Props) {
       </Card>
 
       <Card className="flex flex-col gap-3">
-        <Button
-          variant={me.ready ? "secondary" : "primary"}
-          disabled={busy}
-          onClick={() => void run(() => api(`${base}/ready`, { token, body: { ready: !me.ready } }))}
-        >
-          {me.ready ? "Nu mai sunt gata" : "Sunt gata"}
-        </Button>
+        {state.role === "player" && (
+          <Button
+            variant={me.ready ? "secondary" : "primary"}
+            disabled={busy}
+            onClick={() => void run(() => api(`${base}/ready`, { token, body: { ready: !me.ready } }))}
+          >
+            {me.ready ? "Nu mai sunt gata" : "Sunt gata"}
+          </Button>
+        )}
         {isHost ? (
           <Button disabled={busy || !allReady || !enough} onClick={() => void run(() => api(`${base}/start`, { token, body: {} }))}>
             Împarte piesele

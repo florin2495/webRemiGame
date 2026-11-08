@@ -7,6 +7,7 @@ import { hashToken } from "./crypto";
 import { db, PLAYER_COLUMNS, type PlayerRow, ROOM_COLUMNS, type RoomRow, T } from "./db";
 import { fail } from "./http";
 import { enforceExpiredKicks } from "./kick";
+import { reportRound } from "./leaderboard";
 
 const GONE = `Camera nu există sau a fost închisă după ${minutesLabel(ROOM_IDLE_MINUTES)} de inactivitate.`;
 
@@ -84,14 +85,34 @@ export function requireStatus(room: RoomRow, ...allowed: RoomRow["status"][]) {
   }
 }
 
+/** Seated players in the host-chosen order (unplaced ones last, by join time). Spectators are not included. */
 export async function listPlayers(roomId: string): Promise<PlayerRow[]> {
   const { data, error } = await db()
     .from(T.players)
     .select(PLAYER_COLUMNS)
     .eq("room_id", roomId)
+    .eq("role", "player")
+    .order("seat", { ascending: true, nullsFirst: false })
     .order("joined_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as PlayerRow[];
+}
+
+/** Spectators, oldest first. */
+export async function listSpectators(roomId: string): Promise<PlayerRow[]> {
+  const { data, error } = await db()
+    .from(T.players)
+    .select(PLAYER_COLUMNS)
+    .eq("room_id", roomId)
+    .eq("role", "spectator")
+    .order("joined_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as PlayerRow[];
+}
+
+/** Spectators cannot act: ready, draw, turn, skip. */
+export function requirePlayer(player: PlayerRow) {
+  if (player.role !== "player") fail(403, "Ești spectator. Poți intra în joc la runda următoare.");
 }
 
 export async function getRound(roomId: string, round: number): Promise<{ version: number; state: RoundState } | null> {
@@ -150,6 +171,10 @@ export async function applyMove(
   if (next.result) update.status = "finished";
   const { error } = await db().from(T.rooms).update(update).eq("id", room.id).eq("round", room.round);
   if (error) throw error;
+  if (next.result && !current.state.result) {
+    const nicknames = Object.fromEntries((await listPlayers(room.id)).map((p) => [p.id, p.nickname]));
+    await reportRound(room.code, room.round, next.result, nicknames);
+  }
   return next;
 }
 
@@ -166,8 +191,9 @@ async function history(roomId: string): Promise<RoomState["history"]> {
 }
 
 export async function buildState(room: RoomRow, me: PlayerRow): Promise<RoomState> {
-  const [players, round, hist] = await Promise.all([
+  const [players, spectators, round, hist] = await Promise.all([
     listPlayers(room.id),
+    listSpectators(room.id),
     room.status === "lobby" ? Promise.resolve(null) : getRound(room.id, room.round),
     history(room.id),
   ]);
@@ -206,6 +232,14 @@ export async function buildState(room: RoomRow, me: PlayerRow): Promise<RoomStat
     },
     players: ordered.map(toPublic),
     me: toPublic(me),
+    role: me.role,
+    queued: me.role === "spectator" && me.queued_at !== null,
+    spectators: spectators.map((p) => ({
+      id: p.id,
+      nickname: p.nickname,
+      queued: p.queued_at !== null,
+      connected: isConnected(p.last_seen_at, now),
+    })),
     game: s
       ? {
           order: s.order,

@@ -50,8 +50,13 @@ export interface PlayerRow {
   kick_requested_at: string | null;
   /** Presence stamp, touched by requireMember. Needs migration 002_reconnect.sql. */
   last_seen_at: string;
+  /** Host-chosen play order (null = not placed yet). Needs migration 003_seat_spectators.sql. */
+  seat: number | null;
+  role: "player" | "spectator";
+  /** Spectators only: set while waiting for the next round. */
+  queued_at: string | null;
 }
 
 /** Never add token_hash / device_hash here: these rows feed the public state. */
-export const PLAYER_COLUMNS = "id, room_id, nickname, is_host, ready, joined_at, kick_requested_at, last_seen_at";
+export const PLAYER_COLUMNS = "id, room_id, nickname, is_host, ready, joined_at, kick_requested_at, last_seen_at, seat, role, queued_at";
 export const ROOM_COLUMNS = "id, code, name, password_hash, min_meld, status, round, host_player_id, last_activity_at";

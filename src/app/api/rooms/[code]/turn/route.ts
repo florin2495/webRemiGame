@@ -1,7 +1,7 @@
 import { type Formation, playTurn } from "@/lib/remi";
 import { notifyRoom } from "@/lib/server/broadcast";
 import { fail, handle, readJson } from "@/lib/server/http";
-import { applyMove, requireMember, requireStatus } from "@/lib/server/room";
+import { applyMove, requireMember, requireStatus, requirePlayer } from "@/lib/server/room";
 
 // POST /api/rooms/[code]/turn  { table: Formation[], discard: tileId, version }
 // Ends the caller's turn. Everything is re-validated by playTurn (src/lib/remi.ts).
@@ -9,6 +9,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/tu
   return handle(async () => {
     const { code } = await ctx.params;
     const { room, player } = await requireMember(req, code);
+    requirePlayer(player);
     requireStatus(room, "playing");
     const body = await readJson(req);
     if (!Array.isArray(body.table) || body.table.length > 60) fail(400, "Cerere invalidă.");

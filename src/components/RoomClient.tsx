@@ -22,6 +22,7 @@ import { Game } from "./Game";
 import { KickModal } from "./KickModal";
 import { Lobby } from "./Lobby";
 import { SettingsPanel } from "./SettingsPanel";
+import { SpectatorPanel } from "./SpectatorPanel";
 import { Button, Card, ErrorText, Field } from "./ui";
 
 const POLL_MS = 15_000;
@@ -180,6 +181,7 @@ function Room({ code, token }: { code: string; token: string }) {
       ) : (
         <Game state={state} token={token} refresh={refresh} receivedAt={receivedAt} />
       )}
+      <SpectatorPanel state={state} token={token} refresh={refresh} />
       <SettingsPanel />
       <LeaveButton state={state} token={token} />
     </main>
@@ -192,10 +194,13 @@ function LeaveButton({ state, token }: { state: RoomState; token: string }) {
   const [error, setError] = useState("");
   const { room, me, players } = state;
   const isHost = room.hostPlayerId === me.id;
-  const alone = players.length <= 1;
+  const spectator = state.role === "spectator";
+  const alone = !spectator && players.length <= 1;
 
   async function leave() {
-    const warning = alone
+    const warning = spectator
+      ? "Sigur vrei să părăsești camera?"
+      : alone
       ? "Ești singur în cameră. Dacă pleci, camera se închide. Continui?"
       : room.status === "playing"
         ? "Părăsești runda în desfășurare. Piesele tale ies din joc și nu mai poți reveni în runda asta. Continui?"
@@ -222,7 +227,7 @@ function LeaveButton({ state, token }: { state: RoomState; token: string }) {
   return (
     <div className="pb-6 pt-2 text-center">
       <Button variant="danger" className="w-full" onClick={() => void leave()} disabled={busy}>
-        {busy ? "Se iese…" : room.status === "playing" ? "Părăsește jocul" : "Părăsește camera"}
+        {busy ? "Se iese…" : room.status === "playing" && !spectator ? "Părăsește jocul" : "Părăsește camera"}
       </Button>
       <div className="mt-2">
         <ErrorText>{error}</ErrorText>
