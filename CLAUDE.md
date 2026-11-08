@@ -21,6 +21,7 @@ so this list is the source of truth. **Update it whenever the user confirms a mi
 | `supabase/schema.sql` (initial) | yes (2026-11-07, verified: tables exist, anon gets 401, e2e passed) | `remi_rooms`, `remi_players`, `remi_rounds` |
 | `supabase/migrations/001_pending_kick.sql` | yes (2026-11-07, verified) | `remi_players.kick_requested_at timestamptz` (kick during a game waits 10 s, "Ignoră"). Do not push before it is run. |
 | `supabase/migrations/002_reconnect.sql` | yes (2026-11-07, verified: service role 200, anon 401) | `remi_players.last_seen_at`, `device_hash` + index (rejoin the same seat). Do not push before it is run. |
+| `supabase/migrations/003_seat_spectators.sql` | **no (2026-11-08, waiting for the user)** | `remi_players.seat`, `role` ('player'/'spectator'), `queued_at`: host reorder (`POST /reorder`), spectators max 16 + `POST /queue`. Do not push before it is run. |
 
 Rules for schema changes:
 - Every object of this game is prefixed `remi_` (tables, constraints, indexes). Table names live in `T` in `src/lib/server/db.ts`.
@@ -36,6 +37,9 @@ Rules for schema changes:
 - Rejoin the same seat (`src/lib/reconnect.ts`): every member request stamps `last_seen_at` (≤ every 10 s);
   re-joining with an existing nickname reclaims that seat (new token, same player id and hand) from the same device
   (`device_hash`) or once the seat has been unseen for 45 s, also mid-round. `/state` exposes only a derived `connected` flag.
+- Play order = `remi_players.seat` (host reorders in the lobby via `POST /reorder`); round 1 starts with seat 0, the starter then rotates one seat per round (`roundTurnOrder`).
+- Spectators (`role = 'spectator'`, max 16, `src/lib/seats.ts`): whoever joins a running or full room; they see only the public state. `POST /queue` toggles "Intră la runda următoare"; `new-round` seats the queue in order while there are free seats.
+- Leaderboard (contract C, `src/lib/server/leaderboard.ts`): when a round finishes (not cancelled) it is reported to the hub's `hub_leaderboard` / `hub_leaderboard_rounds` (idempotent). Winner = the closer, or the lowest score if nobody closed. **Needs the hub migration `002_hub_leaderboard.sql` to be run before pushing** (until then the report just logs an error).
 - No teams: 2-4 players, each for themself (the user dropped the 4-player team option on 2026-11-07).
 
 ## Testing
