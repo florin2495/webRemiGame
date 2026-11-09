@@ -76,7 +76,9 @@ export interface RoomListItem {
   name: string;
   minMeld: number;
   hasPassword: boolean;
+  /** Seated players (spectators are not counted). */
   players: number;
+  status: RoomStatus;
 }
 
 export interface Session {

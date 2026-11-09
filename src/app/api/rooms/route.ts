@@ -1,29 +1,33 @@
 import { connection } from "next/server";
-import { MELD_DEFAULT, MELD_OPTIONS, NICKNAME_MAX } from "@/lib/remi";
+import { MELD_DEFAULT, MELD_OPTIONS, NICKNAME_MAX, ROOM_IDLE_MINUTES } from "@/lib/remi";
 import { hashDeviceId, hashPassword, hashToken, newPlayerToken, newRoomCode } from "@/lib/server/crypto";
 import { db, T } from "@/lib/server/db";
 import { cleanText, fail, handle, isUniqueViolation, readJson } from "@/lib/server/http";
 import { cleanupExpiredRooms } from "@/lib/server/room";
 import type { RoomListItem } from "@/lib/types";
 
-// GET /api/rooms - public list of rooms that can be joined right now (lobby, not idle).
+// GET /api/rooms - public list of rooms: lobby and running games (newcomers to a running game join as spectators). Idle ones are excluded.
 export async function GET() {
   await connection(); // always request-time, never prerendered at build
   return handle(async () => {
     await cleanupExpiredRooms();
     const { data, error } = await db()
       .from(T.rooms)
-      .select("code, name, min_meld, password_hash, last_activity_at, players:remi_players!remi_players_room_id_fkey(count)")
-      .in("status", ["lobby", "finished"])
+      .select("code, name, min_meld, status, password_hash, last_activity_at, players:remi_players!remi_players_room_id_fkey(role)")
       .order("last_activity_at", { ascending: false })
       .limit(50);
     if (error) throw error;
-    const rooms: RoomListItem[] = (data ?? []).map((r) => ({
+    const idleCutoff = Date.now() - ROOM_IDLE_MINUTES * 60_000;
+    const rooms: RoomListItem[] = (data ?? [])
+      // Running games are never deleted, but one nobody has had open for a while is dead: hide it.
+      .filter((r) => new Date(r.last_activity_at).getTime() >= idleCutoff)
+      .map((r) => ({
       code: r.code,
       name: r.name,
       minMeld: r.min_meld,
       hasPassword: r.password_hash !== null,
-      players: (r.players as unknown as { count: number }[])[0]?.count ?? 0,
+      players: (r.players as unknown as { role: string }[]).filter((p) => p.role === "player").length,
+      status: r.status,
     }));
     return { rooms };
   });

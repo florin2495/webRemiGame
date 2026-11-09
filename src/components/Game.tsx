@@ -16,6 +16,8 @@ interface Props {
   state: RoomState;
   token: string;
   refresh: () => Promise<void>;
+  /** Shows a state returned by an action, so no /state is needed afterwards. */
+  apply: (s: RoomState) => void;
   receivedAt: number;
 }
 
@@ -29,7 +31,7 @@ interface Draft {
 const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `f${Date.now()}${Math.random()}`.slice(0, 30);
 
-export function Game({ state, token, refresh, receivedAt }: Props) {
+export function Game({ state, token, refresh, apply, receivedAt }: Props) {
   const { room, me, game, players } = state;
   const base = `/api/rooms/${room.code}`;
   const [busy, setBusy] = useState(false);
@@ -73,10 +75,12 @@ export function Game({ state, token, refresh, receivedAt }: Props) {
     setBusy(true);
     setError("");
     try {
-      await fn();
+      const res = (await fn()) as { state?: RoomState } | undefined;
+      // The draft stays on screen until the new state replaces it in the same render (no flash of the old table).
+      if (res?.state) apply(res.state);
       setDraft(null);
       setSelected([]);
-      await refresh();
+      if (!res?.state) await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare.");
       await refresh();
@@ -363,7 +367,7 @@ export function Game({ state, token, refresh, receivedAt }: Props) {
   );
 }
 
-function RoundResultCard({ state, token, refresh }: Omit<Props, "receivedAt">) {
+function RoundResultCard({ state, token, refresh }: Omit<Props, "receivedAt" | "apply">) {
   const { room, me, game, players } = state;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

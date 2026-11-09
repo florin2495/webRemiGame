@@ -56,17 +56,29 @@ function useRoomState(code: string, token: string) {
   const [error, setError] = useState("");
   const [missing, setMissing] = useState(false);
   const latest = useRef(0);
+  /** Id of the newest answer already shown. Older answers that arrive late are dropped, newer ones always shown. */
+  const applied = useRef(0);
+  const current = useRef<RoomState | null>(null);
+
+  const show = useCallback((s: RoomState, id: number) => {
+    if (id < applied.current) return;
+    applied.current = id;
+    current.current = s;
+    setState(s);
+    setReceivedAt(Date.now());
+    setError("");
+  }, []);
+
+  /** Shows a state an action just returned (no /state afterwards). */
+  const apply = useCallback((s: RoomState) => show(s, ++latest.current), [show]);
 
   const refresh = useCallback(async () => {
     const id = ++latest.current;
     try {
       const s = await api<RoomState>(`/api/rooms/${code}/state`, { token });
-      if (id !== latest.current) return; // a newer request already answered
-      setState(s);
-      setReceivedAt(Date.now());
-      setError("");
+      show(s, id); // dropped only if an even newer answer was already shown
     } catch (err) {
-      if (id !== latest.current) return;
+      if (id < applied.current) return;
       if (err instanceof ApiRequestError && err.status === 401) {
         // Another tab may already hold a newer token for this room (seat reclaimed): keep that one.
         if (parseSession(readSessionRaw(code))?.token !== token) return;
@@ -78,7 +90,7 @@ function useRoomState(code: string, token: string) {
         setError(err instanceof Error ? err.message : "Eroare.");
       }
     }
-  }, [code, token]);
+  }, [code, token, show]);
 
   // Bumping this tears the Realtime channel down and subscribes again (phones kill sockets in the background).
   const [reconnectKey, setReconnectKey] = useState(0);
@@ -124,7 +136,13 @@ function useRoomState(code: string, token: string) {
     let retry: number | undefined;
     const channel = client
       .channel(`room:${roomId}`)
-      .on("broadcast", { event: "refresh" }, () => void refresh())
+      .on("broadcast", { event: "refresh" }, (msg) => {
+        // Our own action already returned this state: skip the duplicate /state.
+        const at = (msg as { payload?: { round?: number; version?: number } }).payload;
+        const cur = current.current;
+        if (cur && at && typeof at.version === "number" && at.round === cur.room.round && cur.version !== null && cur.version >= at.version) return;
+        void refresh();
+      })
       .subscribe((status) => {
         if (disposed) return; // CLOSED from our own cleanup
         if (status === "SUBSCRIBED") void refresh(); // catch anything missed while connecting
@@ -139,11 +157,11 @@ function useRoomState(code: string, token: string) {
     };
   }, [roomId, refresh, reconnectKey]);
 
-  return { state, receivedAt, error, missing, refresh };
+  return { state, receivedAt, error, missing, refresh, apply };
 }
 
 function Room({ code, token }: { code: string; token: string }) {
-  const { state, receivedAt, error, missing, refresh } = useRoomState(code, token);
+  const { state, receivedAt, error, missing, refresh, apply } = useRoomState(code, token);
 
   if (missing) {
     return (
@@ -179,7 +197,7 @@ function Room({ code, token }: { code: string; token: string }) {
       {state.room.status === "lobby" ? (
         <Lobby state={state} token={token} refresh={refresh} receivedAt={receivedAt} />
       ) : (
-        <Game state={state} token={token} refresh={refresh} receivedAt={receivedAt} />
+        <Game state={state} token={token} refresh={refresh} apply={apply} receivedAt={receivedAt} />
       )}
       <SpectatorPanel state={state} token={token} refresh={refresh} />
       <SettingsPanel />

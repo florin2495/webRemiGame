@@ -1,7 +1,7 @@
 import { type Formation, playTurn } from "@/lib/remi";
 import { notifyRoom } from "@/lib/server/broadcast";
 import { fail, handle, readJson } from "@/lib/server/http";
-import { applyMove, requireMember, requireStatus, requirePlayer } from "@/lib/server/room";
+import { applyMove, buildState, requireMember, requireStatus, requirePlayer } from "@/lib/server/room";
 
 // POST /api/rooms/[code]/turn  { table: Formation[], discard: tileId, version }
 // Ends the caller's turn. Everything is re-validated by playTurn (src/lib/remi.ts).
@@ -23,7 +23,9 @@ export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/tu
     if (typeof discard !== "number" || !Number.isInteger(discard)) fail(400, "Alege piesa pe care o arunci.");
     const version = Number.isInteger(body.version) ? (body.version as number) : undefined;
     const next = await applyMove(room, (s) => playTurn(s, player.id, table, discard), version);
-    await notifyRoom(room.id, next.result ? "round_over" : "turn");
-    return { ok: true, closed: next.result?.closerId === player.id };
+    // The caller gets the new state in the response (no /state afterwards).
+    const state = await buildState({ ...room, status: next.result ? "finished" : room.status }, player);
+    await notifyRoom(room.id, next.result ? "round_over" : "turn", state.version === null ? undefined : { round: room.round, version: state.version });
+    return { ok: true, closed: next.result?.closerId === player.id, state };
   });
 }
