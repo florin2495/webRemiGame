@@ -31,6 +31,8 @@ async function call(path, { token, body, method } = {}) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** Same keys and values, in any key order. */
+const sameEntries = (a, b) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
 const state = async (code, p) => (await call(`/api/rooms/${code}/state`, { token: p.token })).data;
 
 // ---------------------------------------------------------------------------
@@ -431,7 +433,9 @@ async function main() {
     else if (!s.game.melded[id]) expected[id] = 100 * factor;
     else expected[id] = res1.hands[id].reduce((sum, t) => sum + handValue(t), 0) * factor;
   }
-  check(JSON.stringify(expected) === JSON.stringify(res1.points), `points follow the rules (${res1.closerId ? "closed by " + byId[res1.closerId].name : "pile ran out"}: ${JSON.stringify(Object.fromEntries(Object.entries(res1.points).map(([id, p]) => [byId[id].name, p])))})`);
+  const named = (pts) => JSON.stringify(Object.fromEntries(Object.entries(pts).map(([id, p]) => [byId[id].name, p])));
+  if (!sameEntries(expected, res1.points)) console.log(`  expected points ${named(expected)}`);
+  check(sameEntries(expected, res1.points), `points follow the rules (${res1.closerId ? "closed by " + byId[res1.closerId].name : "pile ran out"}: ${JSON.stringify(Object.fromEntries(Object.entries(res1.points).map(([id, p]) => [byId[id].name, p])))})`);
   const tableTiles = s.game.table.flatMap((f) => f.tiles);
   const handTiles = Object.values(res1.hands).flat();
   const all = [...tableTiles, ...handTiles];
