@@ -108,7 +108,7 @@ export function Rack({
         ))}
       </div>
 
-      <div className="flex flex-col gap-1.5 rounded-xl bg-amber-900/15 p-1.5 pt-2.5 dark:bg-amber-200/10">
+      <div data-testid="my-rack" className="flex flex-col gap-1.5 rounded-xl bg-amber-900/15 p-1.5 pt-2.5 dark:bg-amber-200/10">
         {rack.map((row, r) => (
           <div key={r} className="grid gap-1" style={{ gridTemplateColumns: `repeat(${RACK_COLS}, minmax(0, 1fr))` }}>
             {row.map((t, c) => {
@@ -120,6 +120,7 @@ export function Rack({
                     <div
                       role="button"
                       tabIndex={0}
+                      data-tile={t}
                       aria-label={tileLabel(t)}
                       aria-pressed={selected.includes(t)}
                       onPointerDown={(e) => onPointerDown(e, t)}

@@ -166,6 +166,8 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
       ) : (
         <p
           role="status"
+          data-testid="turn-status"
+          data-my-turn={myTurn ? game.phase : undefined}
           className={`rounded-xl px-4 py-3 text-center font-semibold ${
             myTurn ? "bg-indigo-600 text-white" : "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
           }`}
@@ -190,12 +192,14 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
           >
             <TileBack />
             <span className="text-left text-xs text-zinc-500">
-              <span className="block font-mono text-base font-bold text-zinc-800 dark:text-zinc-200">{game.pileCount}</span>
+              <span data-testid="pile-count" className="block font-mono text-base font-bold text-zinc-800 dark:text-zinc-200">
+                {game.pileCount}
+              </span>
               în pachet
             </span>
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-testid="discard-top" data-tile={game.discardTop ?? undefined}>
           <span className="text-right text-xs text-zinc-500">
             aruncată
             <span className="block">({game.discardCount})</span>
@@ -212,7 +216,7 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
       </Card>
       {myTurn && game.phase === "draw" && (
         <div className="grid grid-cols-2 gap-2">
-          <Button disabled={busy} onClick={() => void drawFrom("pile")}>
+          <Button disabled={busy} onClick={() => void drawFrom("pile")} data-testid="draw-pile">
             Trage din pachet
           </Button>
           <Button variant="secondary" disabled={busy || game.discardTop === null} onClick={() => void drawFrom("discard")}>
@@ -222,7 +226,7 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
       )}
 
       {/* Table */}
-      <Card>
+      <Card testId="table">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-bold">Masa</h2>
           {canPlay && handSel.length > 0 && <span className="text-xs text-zinc-500">Atinge o formație ca să adaugi piesele alese.</span>}
@@ -281,7 +285,7 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
 
       {/* My hand */}
       {inRound && !result && (
-        <Card className="flex flex-col gap-3">
+        <Card className="flex flex-col gap-3" testId="my-hand">
           <h2 className="font-bold">
             Tabla ta <span className="font-normal text-zinc-500">({draft.hand.length} piese)</span>
           </h2>
@@ -309,10 +313,10 @@ export function Game({ state, token, refresh, apply, receivedAt }: Props) {
           )}
           {canPlay && (
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" disabled={busy || handSel.length < 3} onClick={makeFormation}>
+              <Button variant="secondary" disabled={busy || handSel.length < 3} onClick={makeFormation} data-testid="make-formation">
                 Formație nouă{handSel.length >= 3 ? ` (${handSel.length})` : ""}
               </Button>
-              <Button disabled={busy || handSel.length !== 1} onClick={() => void discard()}>
+              <Button disabled={busy || handSel.length !== 1} onClick={() => void discard()} data-testid="discard">
                 {handSel.length === 1
                   ? draft.hand.length === 1
                     ? `Aruncă ${tileLabel(handSel[0])} și închide`
@@ -395,7 +399,7 @@ function RoundResultCard({ state, token, refresh }: Omit<Props, "receivedAt" | "
       : "S-a terminat pachetul. Nimeni nu a închis.";
 
   return (
-    <Card className="flex flex-col gap-3 border-amber-300 dark:border-amber-800">
+    <Card className="flex flex-col gap-3 border-amber-300 dark:border-amber-800" testId="round-result">
       <p role="status" className="text-center text-lg font-black">
         {result.closerId === me.id ? "🏆 " : ""}
         {title}
@@ -420,7 +424,7 @@ function RoundResultCard({ state, token, refresh }: Omit<Props, "receivedAt" | "
         </ul>
       )}
       {isHost ? (
-        <Button disabled={busy} onClick={() => void newRound()}>
+        <Button disabled={busy} onClick={() => void newRound()} data-testid="new-round">
           Rundă nouă
         </Button>
       ) : (

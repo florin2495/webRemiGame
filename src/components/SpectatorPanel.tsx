@@ -38,11 +38,11 @@ export function SpectatorPanel({ state, token, refresh }: Props) {
     <Card className="flex flex-col gap-3">
       {isSpectator && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm">
+          <p className="text-sm" data-testid="spectator-status">
             Ești <strong>spectator</strong>: vezi masa, dar nu poți juca și nu vezi piesele nimănui.
             {room.status === "playing" ? " Runda e în desfășurare." : ""}
           </p>
-          <Button variant={queued ? "secondary" : "primary"} disabled={busy} onClick={() => void toggle()}>
+          <Button variant={queued ? "secondary" : "primary"} disabled={busy} onClick={() => void toggle()} data-testid="queue-toggle">
             {queued ? "Nu mai intru la runda următoare" : "Intră la runda următoare"}
           </Button>
           {queued && (
@@ -58,9 +58,9 @@ export function SpectatorPanel({ state, token, refresh }: Props) {
           <h2 className="mb-1 text-sm font-bold">
             Spectatori ({spectators.length}/{MAX_SPECTATORS})
           </h2>
-          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm" data-testid="spectator-list">
             {spectators.map((s) => (
-              <li key={s.id} className="flex items-center gap-1">
+              <li key={s.id} className="flex items-center gap-1" data-queued={s.queued ? "true" : undefined}>
                 <span>
                   {s.nickname}
                   {s.id === me.id && <span className="text-zinc-500"> (tu)</span>}

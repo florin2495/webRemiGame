@@ -74,13 +74,18 @@ export function Lobby({ state, token, refresh, receivedAt }: Props) {
           <Button
             variant={me.ready ? "secondary" : "primary"}
             disabled={busy}
+            data-testid="ready"
             onClick={() => void run(() => api(`${base}/ready`, { token, body: { ready: !me.ready } }))}
           >
             {me.ready ? "Nu mai sunt gata" : "Sunt gata"}
           </Button>
         )}
         {isHost ? (
-          <Button disabled={busy || !allReady || !enough} onClick={() => void run(() => api(`${base}/start`, { token, body: {} }))}>
+          <Button
+            disabled={busy || !allReady || !enough}
+            data-testid="start-game"
+            onClick={() => void run(() => api(`${base}/start`, { token, body: {} }))}
+          >
             Împarte piesele
           </Button>
         ) : null}

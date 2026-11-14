@@ -72,7 +72,7 @@ export function PlayerList({ state, mode, token, refresh, receivedAt }: Props) {
 
   return (
     <>
-      <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+      <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800" data-testid="player-list">
         {players.map((p, index) => {
           const inRound = Boolean(game && game.order.includes(p.id));
           const isTurn = mode === "game" && game?.currentPlayerId === p.id;

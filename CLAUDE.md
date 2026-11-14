@@ -3,7 +3,7 @@
 # webRemiGame - project notes for Claude
 
 ## Accounts and deploy
-- GitHub: personal account **florin2495** only (repo `florin2495/webRemiGame`, private). Never the work account.
+- GitHub: personal account **florin2495** only (repo `florin2495/webRemiGame`, public). Never the work account.
   Local git identity is pinned in `.git/config`.
 - Vercel project is connected by hand by the user. Functions run in **fra1** (Frankfurt, `vercel.json`), next to the DB.
   Production URL: https://games.hailatat.icu/remi (basePath `/remi`; the hub proxies `/remi/*` to this project)
@@ -49,8 +49,47 @@ Rules for schema changes:
 - Leaderboard (contract C, `src/lib/server/leaderboard.ts`): when a round finishes (not cancelled) it is reported to the hub's `hub_leaderboard` / `hub_leaderboard_rounds` (idempotent). Winner = the closer, or the lowest score if nobody closed. **Needs the hub migration `002_hub_leaderboard.sql` to be run before pushing** (until then the report just logs an error).
 - No teams: 2-4 players, each for themself (the user dropped the 4-player team option on 2026-11-07).
 
-## Testing
-- `npm test` (Vitest: rules + a 200-round bot simulation checking tile conservation), `npx tsc --noEmit`,
-  `npx eslint src`, `npx next build`.
-- End-to-end: drive the real API with 2-4 players (create, join, ready, start, draw, turn, skip, leave, kick,
-  new-round) against `npm run dev` (port 3009), then delete the test rooms.
+## Testing (GitHub Actions, manual only)
+All checks run in GitHub Actions on the free tier (public repo, standard `ubuntu-latest` runners only, never billed
+runners), never locally (user's rule, see `D:\_DEv\CLAUDE.md`). Every workflow is `workflow_dispatch`
+only (no automatic trigger, the user's choice): nothing gates a push, and Vercel deploys `main` regardless.
+Start one with `gh workflow run <file> --ref main`, then `gh run watch` (or the Actions tab, "Run workflow").
+
+| Workflow | Runs |
+| --- | --- |
+| `.github/workflows/check.yml` "Check code" | `npx next typegen` + `npx tsc --noEmit` (typegen first, so route types in `.next/types` are checked), `npx eslint src`, `npx next build`. Every step runs even if an earlier one failed |
+| `.github/workflows/unit-tests.yml` "Unit tests" | `npm test` (Vitest: `src/lib/remi.test.ts` rules + a 200-round bot simulation checking tile conservation, `rack`, `kick`, `reconnect`, `seats`, `leaderboard` tests; pure logic, no DB) |
+| `.github/workflows/e2e.yml` "E2E" | `node scripts/e2e.mjs <base_url>` (input, default production `https://games.hailatat.icu/remi`); one run at a time |
+| `.github/workflows/e2e-ui.yml` "E2E UI (Playwright)" | `npx playwright test` (`playwright.config.ts`, tests in `tests/ui/*.e2e.ts`) against `base_url` (`E2E_BASE_URL`, default production), on desktop Chromium and an emulated iPhone 13 (WebKit). Same concurrency group as "E2E". On failure the report (traces, screenshots, videos) is uploaded as the `playwright-report` artifact |
+
+- E2E needs the repo secrets `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (only for the cleanup safety net;
+  locally the script falls back to `.env.local`). It checks that the deployed client JS contains the `package.json`
+  version of the checked-out ref, so run it on `main` after the Vercel deploy of that version has finished.
+- What E2E does: checks page / `_next` assets / version / manifest / icons / `room/XXXXXX` over HTTP and that
+  `009web-remi-game.vercel.app/remi` serves the same build, API in fra1, then drives the real API (production DB) with
+  up to 4 players: create (password, bad etalare / nickname = 400), join, wrong / missing password, unknown room, duplicate
+  nickname, public room list, forged tokens, rejoin (same device, old token dead, other device = 409), a 5th person in a
+  full lobby = spectator, lobby kick and leave, settings (reset ready), ready, double start, hidden hands, illegal moves
+  (out of turn, bad source, foreign tiles, invalid formation, stale version), discard-pile rule (must use the taken tile),
+  host skip, rejoin mid-round, spectators (join mid-round, no hand, 403 on draw / turn, queue toggle, spectator rejoin,
+  seated by the next round), kick with "Ignoră" and pending kick enforced, a full bot-played round 1 with validated
+  scoring, new round (starter rotates), leave mid-round down to a cancelled round, last one out closes the room.
+  Rooms are named `e2e-test-…` and deleted at the end; it never calls `/api/feedback`.
+- What E2E UI does (`tests/ui/`, shared steps in `helpers.ts`; every change must reach the other screens within 5 s
+  without a reload, polling is 15 s, so this checks Realtime). Tiles are random, so the tests read the rack from the DOM
+  and only draw from the pile and discard (always legal):
+  - `game.e2e.ts` (both projects): two browser contexts (= two devices) create a password room, join by link, ready,
+    deal (15 / 14 tiles), 4 turns (draw, select, discard) each seen live by the other screen, the guest leaves mid-round
+    (host sees the round cancelled live), new round, host leaves and the room closes.
+  - `spectator.e2e.ts` (desktop Chromium only): a third person joins mid-round = spectator (no rack, no player buttons),
+    the players see them, they see every discard live, queue (seen by the players), see the end of the round, and the
+    new round makes them a player.
+  - `mobile.e2e.ts` (iPhone only): no horizontal scroll on home / lobby / game, every rack tile >= 24 px, main buttons
+    >= 44 px high, touch taps select a tile and discard it.
+  Rooms are `e2e-test-ui-…`; a leftover is deleted with the service key from the same repo secrets.
+- Playwright files are `*.e2e.ts`, never `*.spec.ts` / `*.test.ts` (Vitest would pick those up).
+- The UI tests find elements by `data-testid`: `home-submit`, `join-submit`, `ready`, `start-game`, `player-list`,
+  `turn-status` (with `data-my-turn` = "draw"/"play" on your turn), `pile-count`, `draw-pile`, `discard-top`
+  (`data-tile` = top tile id), `table`, `my-hand`, `my-rack` (tiles carry `data-tile` = tile id and `aria-pressed`),
+  `make-formation`, `discard`, `round-result`, `new-round`, `leave`, `spectator-status`, `queue-toggle`,
+  `spectator-list` (items with `data-queued`). Renaming or removing one breaks `tests/ui`.
