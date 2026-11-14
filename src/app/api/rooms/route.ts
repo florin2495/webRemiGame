@@ -3,14 +3,15 @@ import { MELD_DEFAULT, MELD_OPTIONS, NICKNAME_MAX, ROOM_IDLE_MINUTES } from "@/l
 import { hashDeviceId, hashPassword, hashToken, newPlayerToken, newRoomCode } from "@/lib/server/crypto";
 import { db, T } from "@/lib/server/db";
 import { cleanText, fail, handle, isUniqueViolation, readJson } from "@/lib/server/http";
-import { cleanupExpiredRooms } from "@/lib/server/room";
+import { cleanupAbandonedRooms, cleanupExpiredRooms } from "@/lib/server/room";
 import type { RoomListItem } from "@/lib/types";
 
 // GET /api/rooms - public list of rooms: lobby and running games (newcomers to a running game join as spectators). Idle ones are excluded.
+// Loading the list ("Intră în cameră") first sweeps abandoned rooms in any status: no member seen and no activity for 120 s.
 export async function GET() {
   await connection(); // always request-time, never prerendered at build
   return handle(async () => {
-    await cleanupExpiredRooms();
+    await Promise.all([cleanupExpiredRooms(), cleanupAbandonedRooms()]);
     const { data, error } = await db()
       .from(T.rooms)
       .select("code, name, min_meld, status, password_hash, last_activity_at, players:remi_players!remi_players_room_id_fkey(role)")

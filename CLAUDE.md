@@ -30,6 +30,13 @@ Rules for schema changes:
   service key from `.env.local`.
 - Never print or commit the keys in `.env.local`.
 
+## Abandoned rooms (120 s)
+- `GET /api/rooms` (the room list behind "Intră în cameră") first runs `cleanupAbandonedRooms` (`src/lib/server/room.ts`):
+  every room in ANY status (also `playing`) whose `last_activity_at` is older than `ROOM_ABANDONED_MS` (120 s, `remi.ts`)
+  and with no player/spectator `last_seen_at` within 120 s is deleted (players and rounds cascade). Open room pages keep
+  both fresh (`/state` polls every 15 s, stamps `last_seen_at` every 10 s and the room every 20 s), so only rooms nobody
+  has open disappear. The 10-minute lobby/finished expiry stays too.
+
 ## Game logic
 - All rules are pure functions in `src/lib/remi.ts` (deal, draw, playTurn, skipTurn, removeFromRound, scoring).
   The server re-validates every turn with them; the client uses `arrange` / `checkFormation` only for UX.

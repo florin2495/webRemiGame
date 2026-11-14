@@ -8,10 +8,12 @@ import {
   draw,
   type Formation,
   HAND_SIZE,
+  isRoomAbandoned,
   numberOf,
   playTurn,
   removeFromRound,
   type RoundState,
+  ROOM_ABANDONED_MS,
   RuleError,
   skipTurn,
   TILE_COUNT,
@@ -240,5 +242,21 @@ describe("simulation", () => {
       }
       expect(s.result).not.toBeNull();
     }
+  });
+});
+
+describe("abandoned rooms (any status)", () => {
+  const now = Date.parse("2026-11-14T12:00:00Z");
+  const sec = (n: number) => new Date(now - n * 1000).toISOString();
+  it(`is abandoned after ${ROOM_ABANDONED_MS / 1000} s with nobody seen`, () => {
+    expect(isRoomAbandoned(sec(121), [sec(300), sec(200)], now)).toBe(true);
+    expect(isRoomAbandoned(sec(121), [], now)).toBe(true);
+    expect(isRoomAbandoned(sec(121), [null], now)).toBe(true);
+  });
+  it("is kept while the last activity is recent", () => {
+    expect(isRoomAbandoned(sec(119), [], now)).toBe(false);
+  });
+  it("is kept while any player or spectator was seen recently", () => {
+    expect(isRoomAbandoned(sec(600), [sec(600), sec(30)], now)).toBe(false);
   });
 });
