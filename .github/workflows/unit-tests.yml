@@ -3,9 +3,6 @@ name: Unit tests
 # Manual only (Actions tab > Run workflow, or `gh workflow run unit-tests.yml --ref main`).
 on:
   workflow_dispatch:
-  # TEMPORARY (remove before merging to main): run on pushes of the work branch.
-  push:
-    branches: [fix/abandoned-rooms]
 
 permissions:
   contents: read
