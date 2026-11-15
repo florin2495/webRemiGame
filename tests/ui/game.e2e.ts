@@ -1,6 +1,6 @@
 // Scenario 1: two real browsers play a live round on the deployed site: create (with a password), join by the
 // invite link, ready, deal, several turns (draw from the pile, pick a tile, discard), every move reaching the other
-// screen through Realtime (well under the 15 s polling fallback). Then the guest leaves mid-round, the host sees the
+// screen through Realtime (well under the 60 s polling fallback). Then the guest leaves mid-round, the host sees the
 // round cancelled live, starts a new round and leaves, which closes the room. Runs on every project.
 import { expect, test } from "@playwright/test";
 import { createRoom, joinRoom, leaveAll, playTurns, readyAndStart, REALTIME_MS, withPlayers } from "./helpers";

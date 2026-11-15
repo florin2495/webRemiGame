@@ -7,7 +7,7 @@ import type { RoomState } from "@/lib/types";
 import { KickBadge } from "./KickModal";
 import { ErrorText } from "./ui";
 
-/** Shown next to a player not seen for 45 s (phone in the background, closed tab, no network). */
+/** Shown next to a player not seen for 301 s (DISCONNECT_MS) (phone in the background, closed tab, no network). */
 export function OfflineBadge({ connected }: { connected: boolean | undefined }) {
   if (connected !== false) return null;
   return (

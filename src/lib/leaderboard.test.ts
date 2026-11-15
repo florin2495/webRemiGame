@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { playerKey, roundWinners } from "./leaderboard";
+import { isTestRoom, playerKey, roundWinners } from "./leaderboard";
+
+describe("isTestRoom", () => {
+  it("matches the e2e room names", () => {
+    expect(isTestRoom("e2e-test-123")).toBe(true);
+    expect(isTestRoom("e2e-test-ui-abc")).toBe(true);
+  });
+  it("leaves real rooms alone", () => {
+    expect(isTestRoom("Masa lui Ion")).toBe(false);
+    expect(isTestRoom("my e2e-test-room")).toBe(false);
+    expect(isTestRoom("E2E-TEST-x")).toBe(false);
+  });
+});
 
 describe("playerKey", () => {
   it("trims and lowercases", () => {

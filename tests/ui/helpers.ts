@@ -4,7 +4,7 @@
 // discard, which is always legal on your turn.
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
-/** A change has to show up on another screen within this, without a reload. Polling alone takes up to 15 s. */
+/** A change has to show up on another screen within this, without a reload. Polling alone takes up to 60 s. */
 export const REALTIME_MS = 5_000;
 export const PASSWORD = "e2e-pw";
 

@@ -7,7 +7,7 @@ import { cleanupAbandonedRooms, cleanupExpiredRooms } from "@/lib/server/room";
 import type { RoomListItem } from "@/lib/types";
 
 // GET /api/rooms - public list of rooms: lobby and running games (newcomers to a running game join as spectators). Idle ones are excluded.
-// Loading the list ("Intră în cameră") first sweeps abandoned rooms in any status: no member seen and no activity for 120 s.
+// Loading the list ("Intră în cameră") first sweeps abandoned rooms in any status: no member seen and no activity for 600 s (ROOM_ABANDONED_MS).
 export async function GET() {
   await connection(); // always request-time, never prerendered at build
   return handle(async () => {
@@ -20,7 +20,7 @@ export async function GET() {
     if (error) throw error;
     const idleCutoff = Date.now() - ROOM_IDLE_MINUTES * 60_000;
     const rooms: RoomListItem[] = (data ?? [])
-      // Running games are never deleted, but one nobody has had open for a while is dead: hide it.
+      // A room with no activity for ROOM_IDLE_MINUTES is dead (or about to be swept as abandoned): hide it.
       .filter((r) => new Date(r.last_activity_at).getTime() >= idleCutoff)
       .map((r) => ({
       code: r.code,

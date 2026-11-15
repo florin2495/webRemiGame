@@ -1,5 +1,5 @@
 import "server-only";
-import { playerKey, roundWinners } from "@/lib/leaderboard";
+import { isTestRoom, playerKey, roundWinners } from "@/lib/leaderboard";
 import { db } from "./db";
 import type { RoundState } from "@/lib/remi";
 
@@ -8,14 +8,17 @@ const GAME = "remi";
 /**
  * Reports a finished round to the hub's shared leaderboard (service key, like hub_feedback).
  * Idempotent: hub_leaderboard_rounds has PK (game, room_code, round_no), so a round is counted once.
+ * Rooms made by the e2e tests (name "e2e-test-...") are never reported.
  * Never throws: a leaderboard hiccup must not break the game.
  */
 export async function reportRound(
-  roomCode: string,
+  room: { code: string; name: string },
   roundNo: number,
   result: NonNullable<RoundState["result"]>,
   nicknames: Record<string, string>,
 ): Promise<void> {
+  if (isTestRoom(room.name)) return;
+  const roomCode = room.code;
   try {
     if (result.cancelled) return;
     const ids = Object.keys(result.points).filter((id) => nicknames[id]);

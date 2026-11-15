@@ -1,5 +1,10 @@
 // Pure helpers for reporting a finished round to the hub leaderboard (hub_leaderboard, contract C).
 
+/** Rooms created by the e2e tests (scripts/e2e.mjs, tests/ui) never reach the shared leaderboard. */
+export function isTestRoom(roomName: string): boolean {
+  return roomName.startsWith("e2e-test-");
+}
+
 /** player_key = nickname trimmed + lowercased (no accounts: same nickname = same person). */
 export function playerKey(nickname: string): string {
   return nickname.trim().toLowerCase().slice(0, 40);

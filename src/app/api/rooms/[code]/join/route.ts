@@ -21,7 +21,7 @@ interface SeatRow {
 // POST /api/rooms/[code]/join  { nickname, password?, deviceId? }
 // Newcomers sit down in the lobby / between rounds while there is room; in a running game (or a full room) they become spectators. A nickname that already has a seat in the room
 // reclaims that seat (same player id, new token, same hand) when the request comes from the same device
-// or the seat has been disconnected for 45 s - also mid-round.
+// or the seat has been disconnected for DISCONNECT_MS (301 s) - also mid-round.
 export async function POST(req: Request, ctx: RouteContext<"/api/rooms/[code]/join">) {
   return handle(async () => {
     const { code } = await ctx.params;

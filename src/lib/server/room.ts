@@ -2,7 +2,6 @@ import "server-only";
 import {
   isRoomAbandoned,
   isRoomExpired,
-  minutesLabel,
   ROOM_ABANDONED_MS,
   ROOM_IDLE_MINUTES,
   type RoundState,
@@ -17,7 +16,7 @@ import { fail } from "./http";
 import { enforceExpiredKicks } from "./kick";
 import { reportRound } from "./leaderboard";
 
-const GONE = `Camera nu există sau a fost închisă după ${minutesLabel(ROOM_IDLE_MINUTES)} de inactivitate.`;
+const GONE = "Camera nu mai există (a fost închisă după inactivitate).";
 
 export function normalizeCode(code: string): string {
   const c = decodeURIComponent(code).trim().toUpperCase();
@@ -208,7 +207,7 @@ export async function applyMove(
   if (error) throw error;
   if (next.result && !current.state.result) {
     const nicknames = Object.fromEntries((await listPlayers(room.id)).map((p) => [p.id, p.nickname]));
-    await reportRound(room.code, room.round, next.result, nicknames);
+    await reportRound(room, room.round, next.result, nicknames);
   }
   return next;
 }
